@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador eTrex 10</title>
+<meta name="description" content="Simulador educativo del GPS de mano eTrex 10 para practicar su uso.">
+<link rel="stylesheet" href="css/app.css">
+<script>try { var t = localStorage.getItem('etrex10sim.tema'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+</head>
+<body>
+<div id="app">
+<section id="zona-equipo" aria-label="Equipo eTrex 10 simulado">
+<div id="equipo-escala">
+<div id="equipo">
+<div class="lateral izq">
+<button class="btn-lat" data-tecla="zin" title="Acercar (tecla + o RePág)" style="top:118px"><span></span></button>
+<button class="btn-lat" data-tecla="zout" title="Alejar (tecla − o AvPág)" style="top:176px"><span></span></button>
+<button class="btn-lat largo" data-tecla="menu" title="menu (tecla M)" style="top:252px"><span></span></button>
+</div>
+<div class="lateral der">
+<button class="btn-lat" data-tecla="atras" title="back (Retroceso o Esc)" style="top:130px"><span></span></button>
+<button class="btn-lat largo" data-tecla="encendido" title="Encendido / retroiluminación (tecla P; mantener para encender o apagar)" style="top:214px"><span></span></button>
+</div>
+<div class="bisel">
+<div class="rotulos-izq"><i>▲</i><i>▼</i><i class="txt">menu</i></div>
+<div class="rotulos-der"><i class="ico-back"></i><i class="ico-power"></i></div>
+<div class="cara">
+<div class="logo-modelo"><b>e</b>Trex <span>10</span></div>
+<div id="stick" title="Thumb Stick: flechas del teclado; Intro para pulsar (mantener Intro = marcar waypoint)">
+<div class="aro"><div class="perilla"></div></div>
+</div>
+<div class="marco-pantalla"><canvas id="lcd" width="128" height="160" aria-label="Pantalla del GPS"></canvas></div>
+<div class="marca">GARMIN</div>
+</div>
+</div>
+</div>
+<div id="vista3d" hidden>
+<div class="vista3d-botones">
+<button data-ver="frente" title="Ver el equipo de frente">Frente</button>
+<button data-ver="espalda" title="Ver la parte de atrás (tapa de las pilas)">Atrás</button>
+</div>
+<p class="vista3d-nota">Arrastra para girar · rueda o dos dedos para acercar</p>
+</div>
+</div>
+<div id="barra-equipo">
+<button id="btn-solo-equipo" title="Mostrar sólo el equipo (modo teléfono)">⛶</button>
+<button id="btn-3d" title="Ver el equipo en 3D (medidas reales; gíralo arrastrando)">3D</button>
+<button id="btn-color" title="Color del equipo" aria-haspopup="true"><span class="muestra"></span></button>
+<button id="btn-tema" title="Modo claro">☀</button>
+<button id="btn-fondo" title="Detener el fondo" aria-pressed="false">❚❚</button>
+<div id="paleta" hidden role="dialog" aria-label="Color del equipo">
+<label class="otro">Otro color <input type="color" id="color-otro" value="#f3c300"></label>
+</div>
+<span id="estado-sim"></span>
+</div>
+</section>
+<aside id="panel">
+<div id="ayuda-pantalla" aria-live="polite">
+<div class="ayuda-titulo">En pantalla</div>
+<p id="ayuda-texto">Mantén pulsado el botón de encendido (lado derecho, abajo) o la tecla <kbd>P</kbd> para encender el equipo.</p>
+</div>
+<nav id="pestanas">
+<button data-pes="sim" class="activa">Simulación</button>
+<button data-pes="lec">Lecciones</button>
+<button data-pes="dat">Datos</button>
+<button data-pes="con">Controles</button>
+</nav>
+<div class="pestana activa" id="pes-sim">
+<div class="fila">
+<label>Posición desde
+<select id="fuente">
+<option value="sim">Caminante simulado</option>
+<option value="real">GPS real de este dispositivo</option>
+</select>
+</label>
+<label>Entorno de señal
+<select id="entorno"></select>
+</label>
+</div>
+<canvas id="mapa-instructor" width="600" height="420" aria-label="Mapa del instructor: posición real y posición del GPS"></canvas>
+<div class="leyenda">
+<span><i class="lg verdad"></i>Tú (posición real)</span>
+<span><i class="lg gps"></i>Lo que calcula el GPS</span>
+<span><i class="lg circulo"></i>Precisión</span>
+</div>
+<p class="nota">Clic en el mapa: caminar hasta ahí · Mayús + clic: teletransportarse · Rueda: zoom · Arrastrar: mover</p>
+<div class="fila controles-caminar">
+<div class="cruceta">
+<button data-camina="adelante" title="Avanzar (W)">▲</button>
+<button data-camina="izq" title="Girar a la izquierda (A)">⟲</button>
+<button id="btn-detener" title="Detenerse">■</button>
+<button data-camina="der" title="Girar a la derecha (D)">⟳</button>
+<button data-camina="atras" title="Retroceder (S)">▼</button>
+</div>
+<div class="col">
+<label>Modo
+<select id="preset"></select>
+</label>
+<label class="chk"><input type="checkbox" id="crucero"> Avanzar sin mantener tecla</label>
+<label class="chk"><input type="checkbox" id="seguir" checked> Mapa sigue al caminante</label>
+<div id="lectura-caminante" class="lectura"></div>
+</div>
+</div>
+<div class="fila">
+<label>Ir a un lugar
+<select id="lugar-inicio"></select>
+</label>
+<label>Velocidad del tiempo
+<select id="factor">
+<option value="1">× 1 (tiempo real)</option>
+<option value="2">× 2</option>
+<option value="5">× 5</option>
+<option value="10">× 10</option>
+<option value="30">× 30</option>
+</select>
+</label>
+</div>
+<div class="fila">
+<button id="btn-pilas">Cambiar pilas</button>
+<button id="btn-captura">Captura de pantalla</button>
+</div>
+</div>
+<div class="pestana" id="pes-lec">
+<div id="lecciones"></div>
+</div>
+<div class="pestana" id="pes-dat">
+<h3>Transferir archivos (como conectar el equipo por USB)</h3>
+<div class="fila">
+<label class="boton-archivo">Cargar GPX al equipo<input type="file" id="gpx-entrada" accept=".gpx,application/gpx+xml" multiple></label>
+<button id="gpx-waypoints">Descargar waypoints (GPX)</button>
+<button id="gpx-tracks">Descargar tracks (GPX)</button>
+<button id="gpx-todo">Descargar todo (Current.gpx)</button>
+</div>
+<p class="nota">Los GPX descargados se abren en QGIS, Google Earth, BaseCamp o gpx.studio. Así puedes llevar tus waypoints y tracks de práctica a un SIG.</p>
+<h3>Contenido del equipo</h3>
+<div id="resumen-datos" class="lectura"></div>
+<h3>Restablecer</h3>
+<div class="fila">
+<button id="btn-geocaches">Recargar geocachés de práctica</button>
+<button id="btn-fabrica" class="peligro">Restaurar equipo de fábrica</button>
+<button id="btn-borrar-todo" class="peligro">Borrar todo lo guardado en este navegador</button>
+</div>
+<h3>Tus datos</h3>
+<p class="nota">Todo lo que haces en el simulador (waypoints, tracks, rutas, ajustes, avance de las lecciones y preferencias como el color o la vista 3D) se guarda <b>sólo en este navegador</b>, en este dispositivo. No se envía a ningún servidor ni al repositorio. Si borras los datos del navegador o usas otro dispositivo, empiezas desde cero: para conservar tus waypoints y tracks, descárgalos en GPX.</p>
+</div>
+<div class="pestana" id="pes-con">
+<h3>Botones del equipo</h3>
+<table class="tabla-teclas">
+<tr><th>Botón del eTrex</th><th>Teclado</th><th>Dedo o ratón</th></tr>
+<tr><td>Thumb Stick (mover)</td><td>Flechas</td><td>Desliza sobre el stick hacia donde quieras ir, o toca su borde (mantén para repetir)</td></tr>
+<tr><td>Thumb Stick (pulsar)</td><td>Intro</td><td>Toca el centro del stick</td></tr>
+<tr><td>Thumb Stick (mantener) = Marcar waypoint</td><td>Mantener Intro</td><td>Mantén el centro sin deslizar</td></tr>
+<tr><td>back</td><td>Retroceso o Esc</td><td>Botón derecho de arriba</td></tr>
+<tr><td>menu (dos veces = menú principal)</td><td>M</td><td>Botón izquierdo de abajo</td></tr>
+<tr><td>Zoom + / −</td><td>+ / − (o RePág / AvPág)</td><td>Botones izquierdos ▲ ▼</td></tr>
+<tr><td>Encendido (corto: luz; largo: encender/apagar)</td><td>P</td><td>Botón derecho de abajo</td></tr>
+</table>
+<h3>Caminar en el mundo simulado</h3>
+<table class="tabla-teclas">
+<tr><th>Acción</th><th>Teclado</th><th>Dedo o ratón</th></tr>
+<tr><td>Avanzar / retroceder</td><td>W / S</td><td>▲ ▼ junto al mapa</td></tr>
+<tr><td>Girar</td><td>A / D</td><td>⟲ ⟳ junto al mapa</td></tr>
+<tr><td>Caminar hasta un punto</td><td>—</td><td>Toca el punto en el mapa</td></tr>
+<tr><td>Correr</td><td>Mayús</td><td>Elige «Trotando» en «Modo»</td></tr>
+</table>
+<p class="nota">El eTrex 10 no tiene brújula electrónica: la brújula y el mapa «Track arriba» sólo saben hacia dónde vas mientras te mueves.</p>
+</div>
+</aside>
+</div>
+<div id="aviso" hidden></div>
+<script src="js/nucleo/i18n.js"></script>
+<script src="js/datos/fuentes.js"></script>
+<script src="js/nucleo/lcd.js"></script>
+<script src="js/nucleo/geo.js"></script>
+<script src="js/nucleo/astro.js"></script>
+<script src="js/datos/iconos.js"></script>
+<script src="js/datos/mapa-morelos.js"></script>
+<script src="js/datos/relieve-morelos.js"></script>
+<script src="js/datos/textos-en.js"></script>
+<script src="js/gps/constelacion.js"></script>
+<script src="js/gps/receptor.js"></script>
+<script src="js/sim/mundo.js"></script>
+<script src="js/equipo/datos.js"></script>
+<script src="js/equipo/formato.js"></script>
+<script src="js/equipo/ui.js"></script>
+<script src="js/equipo/campos.js"></script>
+<script src="js/equipo/equipo.js"></script>
+<script src="js/equipo/paginas/sistema.js"></script>
+<script src="js/equipo/paginas/satelite.js"></script>
+<script src="js/equipo/paginas/tablero.js"></script>
+<script src="js/equipo/paginas/mapa.js"></script>
+<script src="js/equipo/paginas/waypoints.js"></script>
+<script src="js/equipo/paginas/destino.js"></script>
+<script src="js/equipo/paginas/tracks.js"></script>
+<script src="js/equipo/paginas/rutas.js"></script>
+<script src="js/equipo/paginas/ajustes.js"></script>
+<script src="js/equipo/paginas/apps.js"></script>
+<script src="js/equipo/paginas/geocaches.js"></script>
+<script src="js/panel/gpx.js"></script>
+<script src="js/panel/mapa-instructor.js"></script>
+<script src="js/panel/lecciones.js"></script>
+<script src="js/panel/vista3d.js"></script>
+<script src="js/datos/fondo-panorama.js"></script>
+<script src="js/panel/fondo.js"></script>
+<script src="js/panel/app.js"></script>
+</body>
+</html>
